@@ -1,0 +1,179 @@
+{
+  "N": 384,
+  "P": 8,
+  "results": [
+    {
+      "name": "Variant 1 (naive i-j-k)",
+      "bs": null,
+      "ms": 1158.354833,
+      "iqr": 6.283331999999973,
+      "gflops": 0.09776469590643991
+    },
+    {
+      "name": "Variant 2 (i-k-j)",
+      "bs": null,
+      "ms": 624.696,
+      "iqr": 23.155749000000014,
+      "gflops": 0.18128210841753428
+    },
+    {
+      "name": "Variant 3 (blocked)",
+      "bs": 4,
+      "ms": 1407.665041,
+      "iqr": 311.74245799999994,
+      "gflops": 0.08044968419443756,
+      "max_err": 0.0,
+      "ok": true,
+      "W_tile": 384,
+      "fits": "L1d"
+    },
+    {
+      "name": "Variant 3 (blocked)",
+      "bs": 8,
+      "ms": 1046.923333,
+      "iqr": 94.35966799999994,
+      "gflops": 0.10817048816314803,
+      "max_err": 0.0,
+      "ok": true,
+      "W_tile": 1536,
+      "fits": "L1d"
+    },
+    {
+      "name": "Variant 3 (blocked)",
+      "bs": 12,
+      "ms": 880.412542,
+      "iqr": 34.154333000000065,
+      "gflops": 0.1286285719450825,
+      "max_err": 0.0,
+      "ok": true,
+      "W_tile": 3456,
+      "fits": "L1d"
+    },
+    {
+      "name": "Variant 3 (blocked)",
+      "bs": 16,
+      "ms": 821.488375,
+      "iqr": 33.017832999999996,
+      "gflops": 0.13785491243257095,
+      "max_err": 0.0,
+      "ok": true,
+      "W_tile": 6144,
+      "fits": "L1d"
+    },
+    {
+      "name": "Variant 3 (blocked)",
+      "bs": 24,
+      "ms": 767.883959,
+      "iqr": 9.868417000000022,
+      "gflops": 0.14747828323888715,
+      "max_err": 0.0,
+      "ok": true,
+      "W_tile": 13824,
+      "fits": "L1d"
+    },
+    {
+      "name": "Variant 3 (blocked)",
+      "bs": 32,
+      "ms": 725.304167,
+      "iqr": 29.751583000000096,
+      "gflops": 0.15613616073434194,
+      "max_err": 0.0,
+      "ok": true,
+      "W_tile": 24576,
+      "fits": "L1d"
+    },
+    {
+      "name": "Variant 3 (blocked)",
+      "bs": 48,
+      "ms": 700.518042,
+      "iqr": 2.932707999999934,
+      "gflops": 0.16166065855588627,
+      "max_err": 0.0,
+      "ok": true,
+      "W_tile": 55296,
+      "fits": "L1d"
+    },
+    {
+      "name": "Variant 3 (blocked)",
+      "bs": 64,
+      "ms": 700.951667,
+      "iqr": 37.877666999999974,
+      "gflops": 0.1615606515135087,
+      "max_err": 0.0,
+      "ok": true,
+      "W_tile": 98304,
+      "fits": "L1d"
+    },
+    {
+      "name": "Variant 3 (blocked)",
+      "bs": 96,
+      "ms": 684.659667,
+      "iqr": 3.4124590000000126,
+      "gflops": 0.16540511068253128,
+      "max_err": 0.0,
+      "ok": true,
+      "W_tile": 221184,
+      "fits": "L2"
+    },
+    {
+      "name": "Variant 3 (blocked)",
+      "bs": 128,
+      "ms": 679.721833,
+      "iqr": 5.520291999999927,
+      "gflops": 0.16660669483011883,
+      "max_err": 0.0,
+      "ok": true,
+      "W_tile": 393216,
+      "fits": "L2"
+    }
+  ],
+  "bs_star": 128,
+  "mapping": [
+    {
+      "name": "Variant 1",
+      "I": 0.125,
+      "gflops": 0.09776469590643991,
+      "attainable": 0.5408146207312822,
+      "pct": 18.077302676145074,
+      "bound": "compute"
+    },
+    {
+      "name": "Variant 2",
+      "I": 0.125,
+      "gflops": 0.18128210841753428,
+      "attainable": 0.5408146207312822,
+      "pct": 33.5201936982412,
+      "bound": "compute"
+    },
+    {
+      "name": "Variant 3 (BS*=128)",
+      "I": 10.666666666666666,
+      "gflops": 0.16660669483011883,
+      "attainable": 0.5408146207312822,
+      "pct": 30.80661809860753,
+      "bound": "compute"
+    }
+  ],
+  "verify": "VERIFY_HASH[PHASE3]: 7C29B4CBC3150B0B (P_log=8)",
+  "log": [
+    "=== Phase 3B: GEMM N = 384, P_phys = 8 ===",
+    "V1 naive ijk   :    1158.35 ms  0.09776 GFLOP/s",
+    "V2 ikj         :     624.70 ms  0.18128 GFLOP/s   max|V1-V2|=0.00e+00",
+    "V3 BS=  4     :    1407.67 ms  0.08045 GFLOP/s   max|V3-V2|=0.00e+00 OK",
+    "V3 BS=  8     :    1046.92 ms  0.10817 GFLOP/s   max|V3-V2|=0.00e+00 OK",
+    "V3 BS= 12     :     880.41 ms  0.12863 GFLOP/s   max|V3-V2|=0.00e+00 OK",
+    "V3 BS= 16     :     821.49 ms  0.13785 GFLOP/s   max|V3-V2|=0.00e+00 OK",
+    "V3 BS= 24     :     767.88 ms  0.14748 GFLOP/s   max|V3-V2|=0.00e+00 OK",
+    "V3 BS= 32     :     725.30 ms  0.15614 GFLOP/s   max|V3-V2|=0.00e+00 OK",
+    "V3 BS= 48     :     700.52 ms  0.16166 GFLOP/s   max|V3-V2|=0.00e+00 OK",
+    "V3 BS= 64     :     700.95 ms  0.16156 GFLOP/s   max|V3-V2|=0.00e+00 OK",
+    "V3 BS= 96     :     684.66 ms  0.16541 GFLOP/s   max|V3-V2|=0.00e+00 OK",
+    "V3 BS=128     :     679.72 ms  0.16661 GFLOP/s   max|V3-V2|=0.00e+00 OK",
+    "Variant 1              I=0.1250  attainable=0.5408 GFLOP/s  achieved=0.09776  (18.1%, compute-bound region)",
+    "Variant 2              I=0.1250  attainable=0.5408 GFLOP/s  achieved=0.18128  (33.5%, compute-bound region)",
+    "Variant 3 (BS*=128)    I=10.6667  attainable=0.5408 GFLOP/s  achieved=0.16661  (30.8%, compute-bound region)",
+    "BS* = 128  W_tile = 393216 B",
+    "GFLOP/s V1=0.0978  V3(BS*)=0.1666",
+    "VERIFY_HASH[PHASE3]: 7C29B4CBC3150B0B (P_log=8)"
+  ]
+}

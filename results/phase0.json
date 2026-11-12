@@ -1,0 +1,40 @@
+{
+  "hardware": {
+    "cpu_model": "Apple M1",
+    "P_phys": 8,
+    "P_log": 8,
+    "line_bytes": 128,
+    "l1d_bytes": 131072,
+    "l2_bytes": 12582912,
+    "l3_bytes": 0,
+    "p_cores": 4,
+    "e_cores": 4,
+    "e_l1d_bytes": 65536,
+    "e_l2_bytes": 4194304,
+    "raw": "Apple M1\nhw.physicalcpu: 8\nhw.logicalcpu: 8\nhw.cachelinesize: 128\nhw.l1dcachesize: 65536\nhw.l2cachesize: 4194304\nhw.perflevel0.physicalcpu: 4\nhw.perflevel1.physicalcpu: 4",
+    "os": "Python 3.13.0 / Darwin 27.0.0 (arm64)",
+    "P_log_mp": 8
+  },
+  "timer_calls": 2000000,
+  "avg_call_ns": 42.044583,
+  "min_tick_ns": 41.0,
+  "verify": "VERIFY_HASH[PHASE0]: 87C38630E9D07914 (P_log=8)",
+  "log": [
+    "=== Phase 0: hardware baseline ===",
+    "Apple M1\nhw.physicalcpu: 8\nhw.logicalcpu: 8\nhw.cachelinesize: 128\nhw.l1dcachesize: 65536\nhw.l2cachesize: 4194304\nhw.perflevel0.physicalcpu: 4\nhw.perflevel1.physicalcpu: 4",
+    "cpu_model   : Apple M1",
+    "P_phys      : 8",
+    "P_log       : 8",
+    "line_bytes  : 128",
+    "l1d_bytes   : 131072",
+    "l2_bytes    : 12582912",
+    "l3_bytes    : 0",
+    "os          : Python 3.13.0 / Darwin 27.0.0 (arm64)",
+    "hybrid     : 4 P-cores + 4 E-cores",
+    "mp.cpu_count()             : 8",
+    "perf_counter_ns calls      : 2000000",
+    "avg call latency (ns)      : 42.0446",
+    "min observable tick (ns)   : 41.0000",
+    "VERIFY_HASH[PHASE0]: 87C38630E9D07914 (P_log=8)"
+  ]
+}

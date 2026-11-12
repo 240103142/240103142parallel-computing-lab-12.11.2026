@@ -1,0 +1,16 @@
+{
+  "P": 8,
+  "buf_bytes": 96000000,
+  "bw_ms": 4.134458,
+  "bw_iqr": 1.5832080000000004,
+  "BW": 46.43897700738524,
+  "fma_ms": 1183.399959,
+  "P_sust": 0.5408146207312822,
+  "ridge": 0.011645704870830291,
+  "log": [
+    "=== Phase 3A: roofline (P_phys = 8) ===",
+    "Copy 96 MB (x2 buffers): median 4.134 ms, IQR 1.583 ms  => BW_sustained = 46.439 GB/s",
+    "FMA loop 8 x 8e+07 FLOPs: median 1183.40 ms  => P_sustained = 0.5408 GFLOP/s",
+    "Ridge point I* = P/BW = 0.011646 FLOP/Byte"
+  ]
+}
