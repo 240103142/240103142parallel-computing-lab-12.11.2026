@@ -58,14 +58,27 @@ def main():
                 for r in p1["table1a"]]))
     b = p1["boundary_bytes"]
     exp = h["line_bytes"]
-    w(f"\nThe largest drop in execution time occurs when the slot separation reaches **{b} bytes**. "
-      f"The OS reports a {exp}-byte cache line. " +
-      ("This matches: once each process's slot sits on its own coherence line, the cores no longer "
-       "steal the line from each other on every store." if b == exp else
-       "The measured step is not exactly at the reported line size. In pure Python each iteration costs "
-       "tens of nanoseconds of bytecode dispatch, which partly hides the coherence-miss latency, and on "
-       "Apple Silicon the adjacent-line prefetcher / 128-byte coherence granule can blur the boundary; the "
-       "trend (slow at small strides, fast once slots are line-separated) is what the data shows.") + "\n")
+    t1a = p1["table1a"]
+    k = next(i for i, r in enumerate(t1a) if r["bytes"] == b)
+    drop = 100 * (t1a[k - 1]["median_ms"] - t1a[k]["median_ms"]) / t1a[k - 1]["median_ms"]
+    noise = 100 * max(r["iqr_ms"] / r["median_ms"] for r in t1a)
+    spread = 100 * (max(r["median_ms"] for r in t1a) / min(r["median_ms"] for r in t1a) - 1)
+    per_iter = t1a[0]["median_ms"] * 1e6 / (p1["M"] / P)
+    if drop > noise:
+        w(f"\nThe largest drop in execution time ({drop:.1f}%) occurs when the slot separation reaches "
+          f"**{b} bytes**, larger than the run-to-run noise (max IQR/median = {noise:.1f}%). The OS reports a "
+          f"{exp}-byte cache line" + (", so the boundary matches the coherence granule." if b == exp else
+          "; the measured step is near, but not exactly at, the reported line size.") + "\n")
+    else:
+        w(f"\nThe largest step between neighbouring strides is {drop:.1f}% (at {b} B, which equals the "
+          f"reported {exp}-byte line), but all six medians lie within {spread:.1f}% of each other, inside the "
+          f"run-to-run noise (max IQR/median = {noise:.1f}%). **On this CPU the false-sharing penalty is not "
+          f"resolvable from pure Python.** Each loop iteration costs about {per_iter:.0f} ns of wall time per "
+          "worker (bigint multiply, masking, ctypes store and bytecode dispatch, plus process spawn), while a "
+          "cache-line transfer between cores costs on the order of tens of nanoseconds. Apple's cores also "
+          "absorb repeated stores to the same line in the store buffer, so the coherence traffic is a small "
+          "fraction of the iteration time and is hidden by interpreter overhead. The expected boundary for "
+          f"this CPU is {exp} B (stride = {exp // 8}).\n")
 
     w("**Table 1B — Karp-Flatt diagnostic series**\n")
     rows = []
@@ -78,15 +91,24 @@ def main():
     e1 = [r["e"] for r in s1 if r["e"] is not None]
     e16 = [r["e"] for r in s16 if r["e"] is not None]
     if e1 and e16:
+        gap = e1[-1] - e16[-1]
         w(f"\n**Forensic explanation.** With stride = 1, e(p) goes from {e1[0]:.4f} to {e1[-1]:.4f} as p grows; "
-          f"with stride = 16 it goes from {e16[0]:.4f} to {e16[-1]:.4f}. "
-          "The worker code is identical and has no serial section, so any e(p) above ~0 is overhead that "
-          "behaves like serial work. Under stride = 1 all p slots live in the same cache line(s): every store "
-          "needs the line in the Modified state, so the coherence protocol invalidates the copy held by every "
-          "other core and the next writer has to fetch it back across the interconnect. Those transfers are "
-          "serialised on the line, and their number grows with the number of writers, so the measured serial "
-          "fraction e(p) rises with p instead of staying flat. With stride = 16 (128 B) each slot owns its line, "
-          "stores hit the local L1 in Modified state, and the remaining e(p) is mostly process start-up/join cost.\n")
+          f"with stride = 16 it goes from {e16[0]:.4f} to {e16[-1]:.4f} (difference at p = {s1[-1]['p']}: "
+          f"{gap:+.4f}). The worker code has no serial section, so any e(p) above zero is overhead that behaves "
+          "like serial work. In theory, under stride = 1 all slots share one or two cache lines: every store "
+          "needs the line in the Modified state, so the coherence protocol invalidates the other cores' copies "
+          "and the next writer must fetch it back. Those transfers are serialised on the line and grow with the "
+          "number of writers, so e(p) should rise faster than with stride = 16, where each slot owns its line. ")
+        if abs(gap) < 0.03:
+            w("In the measured data the two series are almost the same, so false sharing is not the main driver "
+              "here. The rise of e(p) with p in **both** series comes from (1) process spawn/join cost, which "
+              "does not shrink with p, and (2) core heterogeneity: at p = 8 half of the workers run on the slower "
+              "efficiency cores, so the run waits for the slowest worker. The coherence effect is too small "
+              "to stand out against interpreter overhead, consistent with Table 1A.\n")
+        else:
+            w(f"The data agrees: at the largest p, stride = 1 has e(p) higher by {gap:.4f}, the extra serial "
+              "fraction caused by cache-line ping-pong. The part common to both series is spawn/join cost and, "
+              "on hybrid CPUs, the slower efficiency cores.\n")
 
     # ------------------------------------------------------------------ 3
     w("## 3. Phase 2 — Strong vs Weak Scaling\n")
@@ -138,13 +160,27 @@ def main():
     w(md_table(["Variant", "BS", "median (ms)", "GFLOP/s", "W_tile = 3·BS²·8", "fits in", "max|C3−C2|"], rows))
     bs = p3b["bs_star"]
     W = 3 * bs * bs * 8
+    v2g = p3b["results"][1]["gflops"]
+    best_g = max(r["gflops"] for r in p3b["results"] if r["bs"])
+    total = 3 * p3b["N"] ** 2 * 8
+    v3 = [r for r in p3b["results"] if r["bs"]]
+    mono = all(v3[i]["gflops"] <= v3[i + 1]["gflops"] * 1.01 for i in range(len(v3) - 1))
     w(f"\n**Cache-capacity analysis.** The best tile is **BS* = {bs}**, footprint W_tile = {W:,} B "
       f"({kb(W)}), against L1d = {kb(h['l1d_bytes'])} and L2 = {kb(h['l2_bytes'])}. "
-      "Very small tiles lose because the six-level loop nest re-enters Python loops and re-creates slices "
-      "very often (loop overhead dominates); very large tiles stop fitting the inner cache levels and approach "
-      "Variant 2's behaviour. In CPython a float in a list is a pointer to a heap object, so the real "
-      "working set is larger than 8 B/element, which pushes the optimum toward tiles that fit comfortably "
-      "inside L1d/L2 rather than filling them.\n")
+      + ("Throughput rises almost steadily with BS, so the optimum is the largest tile tested. "
+         if mono else "") +
+      "Small tiles lose because the six-level loop nest re-enters Python loops and creates new slices very "
+      "often, so loop overhead dominates. ")
+    if h.get("l2_bytes") and total <= h["l2_bytes"]:
+        w(f"The key point is that the whole problem (3 × {p3b['N']}² × 8 B = {total/2**20:.2f} MB) already fits "
+          f"in this CPU's {kb(h['l2_bytes'])} L2, so there are no DRAM misses for tiling to remove. Tiling only "
+          "adds loop overhead, which is why Variant 3 "
+          + (f"never beats Variant 2 ({best_g:.4f} vs {v2g:.4f} GFLOP/s) and " if best_g < v2g else "")
+          + "approaches Variant 2 as BS grows. The audit expectation that W_tile(BS*) fits L1d does not hold "
+            "for CPython: the bottleneck is bytecode dispatch, not cache capacity.\n")
+    else:
+        w("Large tiles stop fitting the inner cache levels and approach Variant 2's behaviour. In CPython the "
+          "interpreter overhead dominates, so the optimum is set by loop overhead as much as by cache size.\n")
     w("**Roofline mapping** (attainable = min(P_sustained, I × BW))\n")
     w(md_table(["Kernel", "I (FLOP/B)", "Attainable (GFLOP/s)", "Achieved (GFLOP/s)", "% of attainable", "region"],
                [[m["name"], f(m["I"], 4), f(m["attainable"], 4), f(m["gflops"], 5), f(m["pct"], 1), m["bound"]]
@@ -175,6 +211,21 @@ def main():
       "%.2f× faster than static block.\n" % (c1["T_wall"], -(-p4["N"] // 1024), c1024["lambda"], c1024["T_wall"],
                                              cs, rr[f"Dynamic C={cs}"]["T_wall"], rr[f"Dynamic C={cs}"]["lambda"],
                                              rr["Static block"]["T_wall"] / rr[f"Dynamic C={cs}"]["T_wall"]))
+    dyn = sorted((r for r in p4["rows"] if r["kind"] == "dynamic"), key=lambda r: r["T_wall"])
+    if len(dyn) > 1 and (dyn[1]["T_wall"] - dyn[0]["T_wall"]) < max(dyn[0]["iqr"], dyn[1]["iqr"]):
+        w(f"C = {dyn[0]['chunk']} and C = {dyn[1]['chunk']} differ by only "
+          f"{dyn[1]['T_wall'] - dyn[0]['T_wall']:.1f} ms, inside the measurement noise, so any chunk in that "
+          "range is effectively optimal: each item here costs milliseconds of work, so even one lock per item "
+          "is cheap compared with the work it protects. ")
+    cyc = rr["Static cyclic"]
+    if cyc["T_wall"] < dyn[0]["T_wall"]:
+        w(f"Cyclic static scheduling was slightly faster than the best dynamic run ({cyc['T_wall']:.1f} vs "
+          f"{dyn[0]['T_wall']:.1f} ms): the skew K(i) changes smoothly, so round-robin already balances the work "
+          f"(λ = {cyc['lambda']:.3f}) with zero synchronisation. Dynamic scheduling would win for irregular "
+          "skew that cyclic distribution cannot predict, and on a hybrid CPU it also lets fast cores take more "
+          "items than slow ones.\n")
+    else:
+        w("\n")
 
     # ------------------------------------------------------------------ logs + code
     w("## Appendix A — Raw terminal telemetry\n")
